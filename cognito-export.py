@@ -1,5 +1,15 @@
 #! /usr/bin/env python3
 
+"""Cognito user data export
+
+Usage: cognito-export.py [options] <user-pool-id>
+
+Options:
+  -h --help         Show this screen
+  --profile <name>  The AWS credentials profile to use
+  --csv             Export a CSV summary in addition to JSON data
+"""
+
 import subprocess
 import json
 import csv
