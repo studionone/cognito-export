@@ -17,56 +17,67 @@ from datetime import datetime
 
 DATE_FORMAT = '%Y/%m/%d %H:%M:%S'
 
-options = {
-    'region': 'ap-southeast-2',
-    'profile': 'parkify',
-    'user-pool-id': '',
-}
 
-args = ['aws', 'cognito-idp', 'list-users']
-for key, value in options.items():
-    args += ['--' + key, value]
+def pool_info(pool_id):
+    """Split a user pool ID into region and ID"""
+    return pool_id.split('_')
 
-users = []
-done = False
-token = None
 
-# Loop through all pages of API results
-while not done:
-    all_args = args + (['--pagination-token', token] if token is not None else [])
-    result = subprocess.run(all_args, capture_output=True)
-    data = json.loads(result.stdout.decode('utf-8'))
+class CognitoExport:
+    def __init__(self, pool_id, profile='default'):
+        """Fetch all users using AWS CLI"""
+        self.users = []
 
-    if 'PaginationToken' in data:
-        token = data['PaginationToken']
-    else:
-        done = True
+        options = {
+            'region': pool_info(pool_id)[0],
+            'profile': profile,
+            'user-pool-id': pool_id,
+        }
 
-    users += data['Users']
+        args = ['aws', 'cognito-idp', 'list-users']
+        for key, value in options.items():
+            args += ['--' + key, value]
 
-print('Found {} users'.format(len(users)))
+        done = False
+        token = None
 
-# Reformat API data
-for user in users:
-    attributes = {item['Name']: item['Value'] for item in user['Attributes']}
-    user['Attributes'] = attributes
+        # Loop through all pages of API results
+        while not done:
+            all_args = args + (['--pagination-token', token] if token is not None else [])
+            result = subprocess.run(all_args, capture_output=True)
+            data = json.loads(result.stdout.decode('utf-8'))
 
-# Export JSON
-with open('./cognito-users.json', 'w') as f:
-    json.dump(users, f, indent=4)
+            if 'PaginationToken' in data:
+                token = data['PaginationToken']
+            else:
+                done = True
 
-# Export CSV
-with open('./cognito-users.csv', 'w') as f:
-    writer = csv.writer(f)
-    writer.writerow(['ID', 'Name', 'Email', 'Phone', 'Created', 'Modified'])
+            self.users += [self.format(u) for u in data['Users']]
 
-    for user in users:
-        writer.writerow([
-            user['Attributes']['sub'],
-            '{} {}'.format(user['Attributes'].get('given_name', ''),
-                           user['Attributes'].get('family_name', '')),
-            user['Attributes'].get('email', ''),
-            user['Attributes'].get('phone_number', ''),
-            datetime.utcfromtimestamp(user['UserCreateDate']).strftime(DATE_FORMAT),
-            datetime.utcfromtimestamp(user['UserLastModifiedDate']).strftime(DATE_FORMAT),
-        ])
+    def format(self, user):
+        """Reformat API data for a single user"""
+        attributes = {item['Name']: item['Value'] for item in user['Attributes']}
+        user['Attributes'] = attributes
+        return user
+
+    def export_json(self, path):
+        """Export all user data to a JSON file"""
+        with open(path, 'w') as f:
+            json.dump(self.users, f, indent=4)
+
+    def export_csv(self, path):
+        """Export default Cognito parameters to a CSV file"""
+        with open(path, 'w') as f:
+            writer = csv.writer(f)
+            writer.writerow(['ID', 'Name', 'Email', 'Phone', 'Created', 'Modified'])
+
+            for user in self.users:
+                writer.writerow([
+                    user['Attributes']['sub'],
+                    '{} {}'.format(user['Attributes'].get('given_name', ''),
+                                   user['Attributes'].get('family_name', '')),
+                    user['Attributes'].get('email', ''),
+                    user['Attributes'].get('phone_number', ''),
+                    datetime.utcfromtimestamp(user['UserCreateDate']).strftime(DATE_FORMAT),
+                    datetime.utcfromtimestamp(user['UserLastModifiedDate']).strftime(DATE_FORMAT),
+                ])
