@@ -14,6 +14,9 @@ import subprocess
 import json
 import csv
 from datetime import datetime
+import os
+
+from docopt import docopt
 
 DATE_FORMAT = '%Y/%m/%d %H:%M:%S'
 
@@ -81,3 +84,22 @@ class CognitoExport:
                     datetime.utcfromtimestamp(user['UserCreateDate']).strftime(DATE_FORMAT),
                     datetime.utcfromtimestamp(user['UserLastModifiedDate']).strftime(DATE_FORMAT),
                 ])
+
+
+if (__name__ == '__main__'):
+    args = docopt(__doc__)
+
+    print('Fetching data...')
+    data = CognitoExport(args['<user-pool-id>'], args['--profile'])
+
+    filename = 'cognito-{}-{}'.format(pool_info(args['<user-pool-id>'])[1],
+                                      datetime.now().strftime('%Y%m%d-%H%M'))
+
+    # Export JSON
+    data.export_json(os.path.join(filename + '.json'))
+
+    # Export CSV
+    if args['--csv']:
+        data.export_csv(os.path.join(os.getcwd(), filename + '.csv'))
+
+    print('Exported {} users'.format(len(data.users)))
