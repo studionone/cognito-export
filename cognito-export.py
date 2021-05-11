@@ -86,7 +86,7 @@ class CognitoExport:
                 ])
 
 
-if (__name__ == '__main__'):
+if __name__ == '__main__':
     args = docopt(__doc__)
 
     print('Fetching data...')

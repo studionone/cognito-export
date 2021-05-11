@@ -7,7 +7,7 @@ A Python script for exporting user data from an AWS Cognito user pool. It automa
 Python 3 and [docopt](https://github.com/docopt/docopt) are required. You can install docopt using PIP:
 
 ```bash
-pip install docopt
+pip3 install docopt
 ```
 
 The AWS CLI is used to communicate with AWS Cognito. This requires credentials to be set up in a `.aws/credentials` file in your home directory. See [AWS credential file settings](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) for more details.
@@ -16,7 +16,7 @@ The AWS CLI is used to communicate with AWS Cognito. This requires credentials t
 
 To export all users to a JSON file, simply pass the ID of the user pool:
 
-```
+```bash
 cognito-export.py <user-pool-id>
 ```
 
